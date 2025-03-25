@@ -18,12 +18,16 @@ final class CreateResponseUsageCompletionTokensDetails
      */
     public static function from(array $attributes): self
     {
-        return new self(
-            $attributes['audio_tokens'] ?? null,
-            $attributes['reasoning_tokens'],
-            $attributes['accepted_prediction_tokens'],
-            $attributes['rejected_prediction_tokens'],
-        );
+        try {
+            return new self(
+                $attributes['audio_tokens'] ?? null,
+                $attributes['reasoning_tokens'] ?? 0,
+                $attributes['accepted_prediction_tokens'] ?? 0,
+                $attributes['rejected_prediction_tokens'] ?? 0,
+            );
+        }catch (\Throwable $e){
+            return new self(null, 0, 0, 0);
+        }
     }
 
     /**
