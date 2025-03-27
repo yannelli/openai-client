@@ -53,10 +53,10 @@ final class CreateResponse implements ResponseContract, ResponseHasMetaInformati
             $attributes['id'] ?? null,
             $attributes['object'],
             $attributes['created'],
-            $attributes['model'] ?? null,
+            $attributes['model'],
             $attributes['system_fingerprint'] ?? null,
             $choices,
-            $attributes['usage'] ?? null,
+            CreateResponseUsage::from($attributes['usage']),
             $meta,
         );
     }
