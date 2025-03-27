@@ -100,8 +100,10 @@ final class CreateResponse implements ResponseContract, ResponseHasMetaInformati
             ]);
         }
 
+        $id = $attributes['id'] ?? null;
+
         return new self(
-            $attributes['id'],
+            $id,
             $attributes['object'],
             $attributes['created'],
             $attributes['model'],
@@ -118,7 +120,7 @@ final class CreateResponse implements ResponseContract, ResponseHasMetaInformati
     public function toArray(): array
     {
         return array_filter([
-            'id' => $this->id,
+            'id' => $this->id ?? null,
             'object' => $this->object,
             'created' => $this->created,
             'model' => $this->model,
