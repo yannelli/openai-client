@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace OpenAI\Responses\Chat;
 
+use InvalidArgumentException;
 use OpenAI\Contracts\ResponseContract;
 use OpenAI\Contracts\ResponseHasMetaInformationContract;
 use OpenAI\Responses\Concerns\ArrayAccessible;
 use OpenAI\Responses\Concerns\HasMetaInformation;
 use OpenAI\Responses\Meta\MetaInformation;
 use OpenAI\Testing\Responses\Concerns\Fakeable;
+use Throwable;
 
 /**
  * @implements ResponseContract<array{id: string, object: string, created: int, model: string, system_fingerprint?:
@@ -62,37 +64,32 @@ final class CreateResponse implements ResponseContract, ResponseHasMetaInformati
      */
     public static function from(array $attributes, MetaInformation $meta): self
     {
-        $choices = [];
-
         // Process choices with individual error handling
+        $choices = [];
         if (isset($attributes['choices']) && is_array($attributes['choices'])) {
             foreach ($attributes['choices'] as $result) {
                 try {
                     $choices[] = CreateResponseChoice::from($result);
-                } catch (\Throwable $e) {
-                    // Log the error with specific details
+                } catch (Throwable $e) {
+                    // Log the error but continue processing
                     error_log(sprintf(
                         'Failed to process choice: %s. Error: %s',
-                        json_encode($result),
+                        json_encode($result, JSON_PARTIAL_OUTPUT_ON_ERROR),
                         $e->getMessage()
                     ));
-                    // Continue processing other choices instead of breaking
                 }
             }
         }
 
         // Handle usage data safely
         try {
-            $usage = isset($attributes['usage']) ?
-                CreateResponseUsage::from($attributes['usage']) :
-                CreateResponseUsage::from([
-                    'prompt_tokens' => 0,
-                    'completion_tokens' => 0,
-                    'total_tokens' => 0,
-                ]);
-        } catch (\Throwable $e) {
+            $usage = CreateResponseUsage::from($attributes['usage'] ?? [
+                'prompt_tokens' => 0,
+                'completion_tokens' => 0,
+                'total_tokens' => 0,
+            ]);
+        } catch (Throwable $e) {
             error_log(sprintf('Failed to process usage data: %s', $e->getMessage()));
-            // Create minimal valid usage data structure
             $usage = CreateResponseUsage::from([
                 'prompt_tokens' => 0,
                 'completion_tokens' => 0,
@@ -100,13 +97,11 @@ final class CreateResponse implements ResponseContract, ResponseHasMetaInformati
             ]);
         }
 
-        $id = $attributes['id'] ?? null;
-
         return new self(
-            $id,
+            $attributes['id'] ?? null,
             $attributes['object'],
             $attributes['created'],
-            $attributes['model'],
+            $attributes['model'] ?? null,
             $attributes['system_fingerprint'] ?? null,
             $choices,
             $usage,
@@ -120,7 +115,7 @@ final class CreateResponse implements ResponseContract, ResponseHasMetaInformati
     public function toArray(): array
     {
         return array_filter([
-            'id' => $this->id ?? null,
+            'id' => $this->id,
             'object' => $this->object,
             'created' => $this->created,
             'model' => $this->model,
